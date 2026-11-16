@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if(!data)return;
     document.querySelectorAll('div,span,p').forEach(function(el){
       if(el.children.length||!/подписчик/.test(el.textContent))return;
-      var card=(el.parentElement&&el.parentElement.textContent)||'';
+      var n=el.parentElement,card='';for(var i=0;i<5&&n;i++,n=n.parentElement){card=n.textContent||'';if(/TikTok|Telegram/.test(card))break;}
       var v=/TikTok/.test(card)?data.tiktok:/Telegram/.test(card)?data.telegram:null;
       if(v){var t=fmt(v);if(el.textContent!==t)el.textContent=t;}
     });
