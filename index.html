@@ -388,20 +388,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     if(n>=1e4)return (n/1e3).toFixed(1).replace('.',',').replace(',0','')+' тыс подписчиков';
     return n.toLocaleString('ru-RU')+' подписчиков';
   };
-  var data=null;
+  var data=null,gaveUp=false,KEY='statsCache';
+  try{var c=JSON.parse(localStorage.getItem(KEY)||'null');if(c&&Date.now()-c.t<3600000)data=c.d;}catch(e){}
   function apply(){
-    if(!data)return;
     document.querySelectorAll('div,span,p').forEach(function(el){
-      if(el.children.length||!/подписчик/.test(el.textContent))return;
+      if(el.children.length||!/подписчик|подписаться|@arinwit6/.test(el.textContent)&&!el.hasAttribute('data-stat'))return;
+      if(!el.hasAttribute('data-stat')&&!/подписчик/.test(el.textContent))return;
       var n=el.parentElement,card='';for(var i=0;i<5&&n;i++,n=n.parentElement){card=n.textContent||'';if(/TikTok|Telegram/.test(card))break;}
-      var v=/TikTok/.test(card)?data.tiktok:/Telegram/.test(card)?data.telegram:null;
-      if(v){var t=fmt(v);if(el.textContent!==t)el.textContent=t;}
+      var v=/TikTok/.test(card)?(data&&data.tiktok):/Telegram/.test(card)?(data&&data.telegram):null;
+      el.setAttribute('data-stat','1');
+      if(v){var t=fmt(v);if(el.textContent!==t)el.textContent=t;el.style.opacity='1';}
+      else if(gaveUp){el.style.opacity='1';}
+      else{el.style.opacity='0';}
+      el.style.transition='opacity .3s';
     });
   }
   function load(){
-    fetch('https://arin-links.netlify.app/api/stats').then(function(r){return r.json()}).then(function(d){data=d;apply();}).catch(function(){});
+    fetch('https://arin-links.netlify.app/api/stats',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+      if(d&&(d.tiktok||d.telegram)){data={tiktok:d.tiktok||(data&&data.tiktok),telegram:d.telegram||(data&&data.telegram)};try{localStorage.setItem(KEY,JSON.stringify({t:Date.now(),d:data}));}catch(e){}}
+      gaveUp=true;apply();
+    }).catch(function(){gaveUp=true;apply();});
   }
-  load();setInterval(load,3600000);
+  load();setInterval(load,600000);
+  setTimeout(function(){gaveUp=true;apply();},3000);
   new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
 })();
 </script>
